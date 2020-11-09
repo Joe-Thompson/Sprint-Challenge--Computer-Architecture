@@ -15,6 +15,9 @@ CMP = 0b10100111  # COMPARE
 L_MASK = 0b00000100  # LESS THAN
 G_MASK = 0b00000010  # GREATER THAN
 E_MASK = 0b00000001  # EQUAL TO
+JMP = 0b01010100  # JUMP
+JEQ = 0b01010101  # check flag value for TRUE
+JNE = 0b01010110  # check flag value for FALSE
 
 
 class CPU:
@@ -37,7 +40,10 @@ class CPU:
                              POP: self.pop,
                              CALL: self.call,
                              RET: self.ret,
-                             CMP: self.cmp
+                             CMP: self.cmp,
+                             JMP: self.jmp,
+                             JEQ: self.jeq,
+                             JNE: self.jne
                              }
         self.fl = 0
 
@@ -212,8 +218,9 @@ class CPU:
         while self.running:
             # read the memory address (MAR) that's stored in register PC (self.pc)
             # store the result in instruction_register
-            instruction_register = self.pc
-            instance = self.ram[instruction_register]
+            print(f"pc: {self.pc}, register: {self.registers}")
+            IR = self.pc
+            instance = self.ram[IR]
 
             try:
                 self.branch_table[instance]()
@@ -227,4 +234,23 @@ class CPU:
         operand_b = self.ram[self.pc + 2]
         self.alu("CMP", operand_a, operand_b)
         self.pc += 3
+
+    def jmp(self):
+        self.pc += 1
+        given_register = self.ram[self.pc]
+        self.pc = self.registers[given_register]
+
+    def jeq(self):
+        given_register = self.ram[self.pc + 1]
+        if self.fl == E_MASK:
+            self.pc = self.registers[given_register]
+        else:
+            self.pc += 2
+
+    def jne(self):
+        given_register = self.ram[self.pc + 1]
+        if self.fl != E_MASK:
+            self.pc = self.registers[given_register]
+        else:
+            self.pc += 2
 

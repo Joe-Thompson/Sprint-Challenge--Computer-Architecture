@@ -11,6 +11,11 @@ POP = 0b01000110  # POP off stack
 CALL = 0b01010000  # CALL subroutine
 RET = 0b00010001  # RETURN
 
+CMP = 0b10100111  # COMPARE
+L_MASK = 0b00000100  # LESS THAN
+G_MASK = 0b00000010  # GREATER THAN
+E_MASK = 0b00000001  # EQUAL TO
+
 
 class CPU:
     """Main CPU class."""
@@ -23,8 +28,18 @@ class CPU:
         self.sp = 7  # Stack Pointer
         self.running = False
 
-        self.branch_table = {LDI: self.ldi, PRN: self.prn, HLT: self.hlt, ADD: self.add, MUL: self.mul, PUSH: self.push,
-                             POP: self.pop, CALL: self.call, RET: self.ret}
+        self.branch_table = {LDI: self.ldi,
+                             PRN: self.prn,
+                             HLT: self.hlt,
+                             ADD: self.add,
+                             MUL: self.mul,
+                             PUSH: self.push,
+                             POP: self.pop,
+                             CALL: self.call,
+                             RET: self.ret,
+                             CMP: self.cmp
+                             }
+        self.fl = 0
 
     # access the RAM inside the CPU object
     # MAR (Memory Address Register) - contains the address that is
@@ -79,6 +94,18 @@ class CPU:
 
         elif op == "MUL":
             self.registers[reg_a] *= self.registers[reg_b]
+
+        elif op == "CMP":
+            self.fl = 0b00000000
+
+            if self.registers[reg_a] == self.registers[reg_b]:
+                self.fl = E_MASK
+
+            elif self.registers[reg_a] < self.registers[reg_b]:
+                self.fl = L_MASK
+
+            elif self.registers[reg_a] > self.registers[reg_b]:
+                self.fl = G_MASK
 
         else:
             raise Exception("Unsupported ALU operation")
@@ -194,3 +221,10 @@ class CPU:
             except KeyError:
                 print(f"KeyError at {self.registers[self.ram[instance]]}")
                 sys.exit(1)
+
+    def cmp(self):
+        operand_a = self.ram[self.pc + 1]
+        operand_b = self.ram[self.pc + 2]
+        self.alu("CMP", operand_a, operand_b)
+        self.pc += 3
+
